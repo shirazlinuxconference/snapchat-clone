@@ -1,0 +1,28 @@
+name: NeorCloud CI/CD
+on:
+  push:
+    branches:
+      - master
+      - dev
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build Docker Image
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Pack CLI
+        run: |
+            curl -sSL "https://github.com/buildpacks/pack/releases/download/v0.29.0/pack-v0.29.0-linux.tgz" | sudo \
+            tar -C /usr/local/bin/ --no-same-owner -xzv pack
+
+      - name: Find package version
+        id: package-version
+        run: |
+            echo ::set-output name=VERSION::$(cat package.json | jq -r '.version')
+
+      - name: Build Docker Image
+        run: |
+            pack build registry.neor.cloud/neorcloud/sample:${{ steps.package-version.outputs.VERSION }}-${{ github.sha }} --builder heroku/builder:22 --publish
+    
